@@ -1,6 +1,6 @@
 package org.example.spring;
 
 public interface BeanFactory {
-    Object createBean(String beanName, Object... args);
-    Object getBean(String beanName, Object... args);
+    <T> T createBean(String beanName, Class<T> beanType, Object... args);
+    <T> T getBean(String beanName, Class<T> beanType, Object... args);
 }

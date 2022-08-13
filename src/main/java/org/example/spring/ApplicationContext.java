@@ -34,7 +34,7 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
     }
 
     @Override
-    public Object createBean(String beanName, Object... args) {
+    public <T> T createBean(String beanName, Class<T> beanType, Object... args) {
         BeanDefinition beanDefinition = registry.get(beanName);
         Class<?> beanClass = beanDefinition.getBeanClass();
         Constructor<?> beanConstructor;
@@ -61,7 +61,7 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             throw new BeansException("createBean failed:", e);
         }
         factory.put(beanName, bean);
-        return bean;
+        return (T) bean;
     }
 
     private Object applyBeanPostProcessorBeforeInit(Object bean, String beanName) {
@@ -81,12 +81,12 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
     }
 
     @Override
-    public Object getBean(String beanName, Object... args) {
+    public <T> T getBean(String beanName, Class<T> beanType, Object... args) {
         Object bean = factory.get(beanName);
         if (bean == null) {
-            return createBean(beanName, args);
+            return createBean(beanName, beanType, args);
         }
-        return bean;
+        return (T) bean;
     }
 
     private void applyPropertyValues(Object bean, BeanDefinition beanDefinition) {
@@ -94,7 +94,7 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             String name = propertyValue.name();
             Object value = propertyValue.value();
             if (value instanceof BeanReference beanReference) {
-                value = getBean(beanReference.getBeanName());
+                value = getBean(beanReference.getBeanName(), bean.getClass());
             }
             BeanUtil.setFieldValue(bean, name, value);
         });
@@ -130,7 +130,7 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             String beanName = entry.getKey();
             BeanDefinition beanDefinition = entry.getValue();
             if (BeanPostProcessor.class.isAssignableFrom(beanDefinition.getBeanClass())) {
-                beanPostProcessorList.add((BeanPostProcessor) createBean(beanName));
+                beanPostProcessorList.add(createBean(beanName, BeanPostProcessor.class));
             }
         }
     }
@@ -140,7 +140,7 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             String beanName = entry.getKey();
             BeanDefinition beanDefinition = entry.getValue();
             if (BeanFactoryPostProcessor.class.isAssignableFrom(beanDefinition.getBeanClass())) {
-                BeanFactoryPostProcessor beanFactoryPostProcessor = (BeanFactoryPostProcessor) createBean(beanName);
+                BeanFactoryPostProcessor beanFactoryPostProcessor = createBean(beanName, BeanFactoryPostProcessor.class);
                 beanFactoryPostProcessor.postProcessBeanFactory(this);
             }
         }

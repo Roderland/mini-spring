@@ -15,7 +15,7 @@ public class TestApi {
         ApplicationContext applicationContext = new ApplicationContext();
         applicationContext.loadBeanDefinitions("classpath:spring.xml");
 
-        UserService userService = (UserService) applicationContext.getBean("userService", "10001");
+        UserService userService = applicationContext.getBean("userService", UserService.class, "10001");
         System.out.println(userService.queryUserInfo());
     }
 }
