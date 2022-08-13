@@ -3,6 +3,8 @@ package org.example.spring;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.XmlUtil;
+import org.example.spring.processor.BeanFactoryPostProcessor;
+import org.example.spring.processor.BeanPostProcessor;
 import org.example.spring.resource.ClassPathResource;
 import org.example.spring.resource.Resource;
 import org.example.spring.resource.ResourceLoader;
@@ -13,19 +15,22 @@ import org.w3c.dom.NodeList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, ResourceLoader {
 
     private final Map<String, BeanDefinition> registry = new HashMap<>();
     private final Map<String, Object> factory = new HashMap<>();
+    private final List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
 
     @Override
     public void register(String beanName, BeanDefinition beanDefinition) {
         registry.put(beanName, beanDefinition);
+    }
+
+    @Override
+    public BeanDefinition getBeanDefinition(String beanName) {
+        return registry.get(beanName);
     }
 
     @Override
@@ -45,11 +50,34 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             }
             bean = beanConstructor.newInstance(args);
             applyPropertyValues(bean, beanDefinition);
+
+            // before init Bean
+            bean = applyBeanPostProcessorBeforeInit(bean, beanName);
+
+            // after init Bean
+            bean = applyBeanPostProcessorAfterInit(bean, beanName);
+
         } catch (Throwable e) {
             throw new BeansException("createBean failed:", e);
         }
         factory.put(beanName, bean);
         return bean;
+    }
+
+    private Object applyBeanPostProcessorBeforeInit(Object bean, String beanName) {
+        Object result = bean;
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+            result = beanPostProcessor.postProcessBeforeInit(result, beanName);
+        }
+        return result;
+    }
+
+    private Object applyBeanPostProcessorAfterInit(Object bean, String beanName) {
+        Object result = bean;
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+            result = beanPostProcessor.postProcessAfterInit(result, beanName);
+        }
+        return result;
     }
 
     @Override
@@ -82,12 +110,38 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
     }
 
     public void loadBeanDefinitions(String... locations) {
+        // 读取配置文件并加载 BeanDefinition
         for (String location : locations) {
             Resource resource = this.getResource(location);
             try (InputStream resourceInputStream = resource.getInputStream()) {
                 loadBeanDefinitionFromXML(resourceInputStream);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
+            }
+        }
+        // 实例化 BeanFactoryPostProcessor 并执行来修改 BeanDefinition
+        invokeBeanFactoryPostProcessor();
+        // 注册 BeanPostProcessor 确保 Bean 实例化前后可以用来修改 Bean
+        registerBeanPostProcessor();
+    }
+
+    private void registerBeanPostProcessor() {
+        for (Map.Entry<String, BeanDefinition> entry : registry.entrySet()) {
+            String beanName = entry.getKey();
+            BeanDefinition beanDefinition = entry.getValue();
+            if (BeanPostProcessor.class.isAssignableFrom(beanDefinition.getBeanClass())) {
+                beanPostProcessorList.add((BeanPostProcessor) createBean(beanName));
+            }
+        }
+    }
+
+    private void invokeBeanFactoryPostProcessor() {
+        for (Map.Entry<String, BeanDefinition> entry : registry.entrySet()) {
+            String beanName = entry.getKey();
+            BeanDefinition beanDefinition = entry.getValue();
+            if (BeanFactoryPostProcessor.class.isAssignableFrom(beanDefinition.getBeanClass())) {
+                BeanFactoryPostProcessor beanFactoryPostProcessor = (BeanFactoryPostProcessor) createBean(beanName);
+                beanFactoryPostProcessor.postProcessBeanFactory(this);
             }
         }
     }

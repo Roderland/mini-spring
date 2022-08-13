@@ -4,8 +4,13 @@
     <bean id="userDao" class="org.example.spring.test.dao.UserDao"/>
 
     <bean id="userService" class="org.example.spring.test.service.UserService">
-        <property name="uid" value="10001"/>
+        <property name="uid" value="10002"/>
+        <property name="company" value="?"/>
+        <property name="location" value="?"/>
         <property name="userDao" ref="userDao"/>
     </bean>
+
+    <bean class="org.example.spring.test.common.UserBeanFactoryPostProcessor"/>
+    <bean class="org.example.spring.test.common.UserBeanPostProcessor"/>
 
 </beans>

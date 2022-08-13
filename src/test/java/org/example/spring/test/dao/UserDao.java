@@ -10,6 +10,10 @@ public class UserDao {
         hashMap.put("10001", "spring");
     }
 
+    public void putUserInfo(String uid, String info) {
+        hashMap.put(uid, info);
+    }
+
     public String queryUserName(String uid) {
         return hashMap.get(uid);
     }
