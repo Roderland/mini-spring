@@ -6,8 +6,13 @@ import java.util.Map;
 public class UserDao {
     private static final Map<String, String> hashMap = new HashMap<>();
 
-    static {
+    public void initDataMethod() {
         hashMap.put("10001", "spring");
+        hashMap.put("10002", "spring");
+    }
+
+    public void destroyDataMethod() {
+        System.out.println("invoke destroyDataMethod.");
     }
 
     public void putUserInfo(String uid, String info) {

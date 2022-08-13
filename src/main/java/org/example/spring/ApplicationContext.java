@@ -15,6 +15,7 @@ import org.w3c.dom.NodeList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.*;
 
 public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, ResourceLoader {
@@ -22,6 +23,10 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
     private final Map<String, BeanDefinition> registry = new HashMap<>();
     private final Map<String, Object> factory = new HashMap<>();
     private final List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
+
+    public ApplicationContext() {
+        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+    }
 
     @Override
     public void register(String beanName, BeanDefinition beanDefinition) {
@@ -53,15 +58,23 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
 
             // before init Bean
             bean = applyBeanPostProcessorBeforeInit(bean, beanName);
-
+            // init Bean method
+            invokeInitMethod(bean, beanDefinition);
             // after init Bean
             bean = applyBeanPostProcessorAfterInit(bean, beanName);
-
         } catch (Throwable e) {
             throw new BeansException("createBean failed:", e);
         }
         factory.put(beanName, bean);
         return (T) bean;
+    }
+
+    private void invokeInitMethod(Object bean, BeanDefinition beanDefinition) throws Exception {
+        String initMethodName = beanDefinition.getInitMethodName();
+        if (StrUtil.isNotBlank(initMethodName)) {
+            Method initMethod = beanDefinition.getBeanClass().getMethod(initMethodName);
+            initMethod.invoke(bean);
+        }
     }
 
     private Object applyBeanPostProcessorBeforeInit(Object bean, String beanName) {
@@ -158,6 +171,8 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             String id = bean.getAttribute("id");
             String name = bean.getAttribute("name");
             String className = bean.getAttribute("class");
+            String initMethod = bean.getAttribute("init-method");
+            String destroyMethod = bean.getAttribute("destroy-method");
 
             Class<?> clazz = Class.forName(className);
             String beanName = StrUtil.isNotBlank(id) ? id : name;
@@ -170,6 +185,9 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             }
 
             BeanDefinition beanDefinition = new BeanDefinition(clazz);
+            beanDefinition.setInitMethodName(initMethod);
+            beanDefinition.setDestroyMethodName(destroyMethod);
+
             for (int j = 0; j < bean.getChildNodes().getLength(); j++) {
                 if (!(bean.getChildNodes().item(j) instanceof Element property)) continue;
                 if (!Objects.equals("property", property.getNodeName())) continue;
@@ -183,6 +201,28 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             }
 
             register(beanName, beanDefinition);
+        }
+    }
+
+    private void close() {
+        for (Map.Entry<String, BeanDefinition> entry : registry.entrySet()) {
+            String beanName = entry.getKey();
+            BeanDefinition beanDefinition = entry.getValue();
+            Class<?> beanClass = beanDefinition.getBeanClass();
+            String destroyMethodName = beanDefinition.getDestroyMethodName();
+
+            if (StrUtil.isNotBlank(destroyMethodName)) {
+                Object bean = factory.get(beanName);
+                if (bean != null) {
+                    Method destroyMethod = null;
+                    try {
+                        destroyMethod = beanClass.getMethod(destroyMethodName);
+                        destroyMethod.invoke(bean);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
 }
