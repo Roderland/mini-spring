@@ -3,6 +3,7 @@ package org.example.spring;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.XmlUtil;
+import org.example.spring.processor.ApplicationContextAwareProcessor;
 import org.example.spring.processor.BeanFactoryPostProcessor;
 import org.example.spring.processor.BeanPostProcessor;
 import org.example.spring.resource.ClassPathResource;
@@ -26,6 +27,7 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
 
     public ApplicationContext() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+        beanPostProcessorList.add(new ApplicationContextAwareProcessor(this));
     }
 
     @Override

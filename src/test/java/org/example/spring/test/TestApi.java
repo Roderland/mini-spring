@@ -13,5 +13,7 @@ public class TestApi {
 
         UserService userService = applicationContext.getBean("userService", UserService.class, "10001");
         System.out.println(userService.queryUserInfo());
+
+        System.out.println(userService.getApplicationContext());
     }
 }
