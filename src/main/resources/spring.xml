@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans>
+    <bean id="userFactory" class="org.example.spring.test.factory.UserFactory"/>
 
     <bean id="userDao" class="org.example.spring.test.dao.UserDao" init-method="initDataMethod" destroy-method="destroyDataMethod"/>
 
     <bean id="userService" class="org.example.spring.test.service.UserService">
-        <property name="uid" value="10002"/>
+<!--        <property name="uid" value=""/>-->
         <property name="company" value="?"/>
         <property name="location" value="?"/>
         <property name="userDao" ref="userDao"/>
@@ -12,5 +13,8 @@
 
     <bean class="org.example.spring.test.common.UserBeanFactoryPostProcessor"/>
     <bean class="org.example.spring.test.common.UserBeanPostProcessor"/>
+
+    <bean class="org.example.spring.test.event.UserEventListener"/>
+    <bean class="org.example.spring.test.event.MyEventListener"/>
 
 </beans>

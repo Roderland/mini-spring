@@ -1,4 +1,4 @@
-package org.example.spring;
+package org.example.spring.bean;
 
 public interface BeanDefinitionRegistry {
     void register(String beanName, BeanDefinition beanDefinition);

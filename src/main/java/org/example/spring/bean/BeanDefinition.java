@@ -1,4 +1,4 @@
-package org.example.spring;
+package org.example.spring.bean;
 
 import java.util.ArrayList;
 import java.util.Arrays;

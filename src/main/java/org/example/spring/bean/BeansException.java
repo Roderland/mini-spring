@@ -1,4 +1,4 @@
-package org.example.spring;
+package org.example.spring.bean;
 
 public class BeansException extends RuntimeException {
     public BeansException(String msg) {

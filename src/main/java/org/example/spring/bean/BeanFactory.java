@@ -1,4 +1,4 @@
-package org.example.spring;
+package org.example.spring.bean;
 
 public interface BeanFactory {
     <T> T createBean(String beanName, Class<T> beanType, Object... args);

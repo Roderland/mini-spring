@@ -1,6 +1,6 @@
 package org.example.spring.test.common;
 
-import org.example.spring.BeansException;
+import org.example.spring.bean.BeansException;
 import org.example.spring.processor.BeanPostProcessor;
 import org.example.spring.test.dao.UserDao;
 import org.example.spring.test.service.UserService;

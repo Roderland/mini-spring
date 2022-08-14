@@ -1,7 +1,7 @@
 package org.example.spring.test.service;
 
 import org.example.spring.ApplicationContext;
-import org.example.spring.BeansException;
+import org.example.spring.bean.BeansException;
 import org.example.spring.aware.ApplicationContextAware;
 import org.example.spring.test.dao.UserDao;
 

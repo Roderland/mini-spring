@@ -7,8 +7,8 @@ public class UserDao {
     private static final Map<String, String> hashMap = new HashMap<>();
 
     public void initDataMethod() {
-        hashMap.put("10001", "spring");
-        hashMap.put("10002", "spring");
+        hashMap.put("10001", "spring-01");
+        hashMap.put("10002", "spring-02");
     }
 
     public void destroyDataMethod() {

@@ -3,6 +3,10 @@ package org.example.spring;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.XmlUtil;
+import org.example.spring.bean.*;
+import org.example.spring.event.ApplicationEvent;
+import org.example.spring.event.ApplicationEventListener;
+import org.example.spring.event.ApplicationEventPublisher;
 import org.example.spring.processor.ApplicationContextAwareProcessor;
 import org.example.spring.processor.BeanFactoryPostProcessor;
 import org.example.spring.processor.BeanPostProcessor;
@@ -19,11 +23,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, ResourceLoader {
+public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, ResourceLoader, ApplicationEventPublisher {
 
     private final Map<String, BeanDefinition> registry = new HashMap<>();
     private final Map<String, Object> factory = new HashMap<>();
     private final List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
+    private final List<ApplicationEventListener> listenerList = new ArrayList<>();
 
     public ApplicationContext() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
@@ -99,7 +104,10 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
     public <T> T getBean(String beanName, Class<T> beanType, Object... args) {
         Object bean = factory.get(beanName);
         if (bean == null) {
-            return createBean(beanName, beanType, args);
+            bean = createBean(beanName, beanType, args);
+        }
+        if (bean instanceof FactoryBean factoryBean) {
+            bean = factoryBean.getObject();
         }
         return (T) bean;
     }
@@ -136,8 +144,10 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
         }
         // 实例化 BeanFactoryPostProcessor 并执行来修改 BeanDefinition
         invokeBeanFactoryPostProcessor();
-        // 注册 BeanPostProcessor 确保 Bean 实例化前后可以用来修改 Bean
+        // 添加 BeanPostProcessor 确保 Bean 实例化前后可以用来修改 Bean
         registerBeanPostProcessor();
+        // 添加 ApplicationEventListener
+        registerApplicationEventListener();
     }
 
     private void registerBeanPostProcessor() {
@@ -146,6 +156,16 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
             BeanDefinition beanDefinition = entry.getValue();
             if (BeanPostProcessor.class.isAssignableFrom(beanDefinition.getBeanClass())) {
                 beanPostProcessorList.add(createBean(beanName, BeanPostProcessor.class));
+            }
+        }
+    }
+
+    private void registerApplicationEventListener() {
+        for (Map.Entry<String, BeanDefinition> entry : registry.entrySet()) {
+            String beanName = entry.getKey();
+            BeanDefinition beanDefinition = entry.getValue();
+            if (ApplicationEventListener.class.isAssignableFrom(beanDefinition.getBeanClass())) {
+                listenerList.add(createBean(beanName, ApplicationEventListener.class));
             }
         }
     }
@@ -225,6 +245,13 @@ public class ApplicationContext implements BeanDefinitionRegistry, BeanFactory, 
                     }
                 }
             }
+        }
+    }
+
+    @Override
+    public void publishEvent(ApplicationEvent event) {
+        for (ApplicationEventListener listener : listenerList) {
+            listener.onApplicationEvent(event);
         }
     }
 }

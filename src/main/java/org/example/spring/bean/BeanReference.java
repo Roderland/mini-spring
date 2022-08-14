@@ -1,4 +1,4 @@
-package org.example.spring;
+package org.example.spring.bean;
 
 public class BeanReference {
     private final String beanName;
