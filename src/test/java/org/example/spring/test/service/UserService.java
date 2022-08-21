@@ -5,7 +5,7 @@ import org.example.spring.bean.BeansException;
 import org.example.spring.aware.ApplicationContextAware;
 import org.example.spring.test.dao.UserDao;
 
-public class UserService implements ApplicationContextAware{
+public class UserService implements IUserService {
     private String uid;
     private String company;
     private String location;
@@ -34,6 +34,12 @@ public class UserService implements ApplicationContextAware{
 
     public String queryUserInfo() {
         return uid + " " + company + " " + location + " " + userDao.queryUserName(uid);
+    }
+
+    @Override
+    public String register(String uid, String username) {
+        userDao.putUserInfo(uid, username);
+        return "uid: " +uid + " username: " + userDao.queryUserName(uid);
     }
 
     @Override
